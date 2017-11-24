@@ -11,14 +11,13 @@
 (defonce node-positions (reagent/atom {}))
 
 (defn json-ui []
-  [:div
-   [:h3 "Request JSON"]
+  [:div {:class "modal-content"}
+   [:h4 {:class "modal-header"} "Request JSON"]
    [:textarea
-    {:value     (.stringify js/JSON (clj->js (map #(dissoc % :uuid) (vals @request-json))))
+    {:class "form-control"
+     :value     (.stringify js/JSON (clj->js (map #(dissoc % :uuid) (vals @request-json))))
      :read-only true
-     :style
-                {:width  "50%"
-                 :height "100px"}}]])
+     :rows 5}]])
 
 (defonce request-count (reagent/atom 0))
 
@@ -82,30 +81,31 @@
                         )}]))
 
 (defn request-field [field]
-  [:input {:type      "text"
-           :size      "50"
-           :on-change (fn [evt]
-                        (let [content (.-value (.-target evt))]
-                          (swap! @current-request assoc field content)
-                          (swap! request-json assoc (:uuid (deref @current-request)) (deref @current-request))))
-           :value     (field (deref @current-request))}])
+  [:div {:class "col-sm-9"}
+   [:input {:type      "text"
+            :on-change (fn [evt]
+                         (let [content (.-value (.-target evt))]
+                           (swap! @current-request assoc field content)
+                           (swap! request-json assoc (:uuid (deref @current-request)) (deref @current-request))))
+            :value     (field (deref @current-request))}]])
+
+(defn label [description]
+  [:span {:class "col-sm-3 col-form-label"}
+   description])
+
+(defn request-row [description field]
+  [:div {:class "form-group row"}
+   [label description]
+   [request-field field]])
 
 (defn request-detail []
-  [:div
-   [:h3 "Request Details"]
-   [:div
-    [:div
-     [:span "Request ID"]]
-    [:div
-     [request-field :id]]
-    [:div
-     [:span "Service Name"]]
-    [:div
-     [request-field :serviceName]]
-    [:div
-     [:span "Path"]]
-    [:div
-     [request-field :path]]]])
+  [:div {:class "modal-content"}
+   [:div {:class "modal-header"}
+    [:h4 {:class "modal-title"} "Request Details"]]
+   [:div {:class "modal-body"}
+    [request-row "Request ID" :id]
+    [request-row "Service Name" :serviceName]
+    [request-row "Path" :path]]])
 
 
 (defn connector [request pos visible?]
@@ -200,10 +200,9 @@
                     ))
 
 (defn draw-lines []
-  (if (not (empty? @lines))
+  (when (not (empty? @lines))
     (for [l (vals @lines)]
-      [line (:start-pos l) (:end-pos l)])
-    [:div]))
+      [line (:start-pos l) (:end-pos l)])))
 
 (defn graph-ui []
   (into (into
