@@ -4,6 +4,8 @@
 
 (enable-console-print!)
 
+(defonce pos-offset 10)
+(defonce node-initial-pos (reagent/atom {:x 100, :y 150}))
 (defonce request-json (reagent/atom {}))
 (defonce current-request (reagent/atom (reagent/atom nil)))
 (defonce dragging-request (reagent/atom nil))
@@ -22,14 +24,19 @@
 (defonce request-count (reagent/atom 0))
 
 (defn request-icon []
-  [:rect {
-          :on-click #(swap! request-count inc)
-          :width    30
-          :height   20
-          :y        100
-          :x        50
-          :stroke   "black"
-          :fill     "gray"}])
+  (reagent/with-let [border-color (reagent/atom "gray")]
+                    [:rect {
+                            :on-click       (fn [_]
+                                              (swap! request-count inc)
+                                              (reset! node-initial-pos {:x (+ (:x @node-initial-pos) pos-offset)
+                                                                        :y (+ (:y @node-initial-pos) pos-offset)}))
+                            :on-mouse-over  #(reset! border-color "black")
+                            :on-mouse-leave #(reset! border-color "gray")
+                            :width          30
+                            :height         20
+                            :x              10
+                            :stroke         @border-color
+                            :fill           "gray"}]))
 
 (defn global-coordinate [elem]
   (let [svg (.getElementById js/document "request-graph-svg")
@@ -125,14 +132,12 @@
                      mouse-over? (reagent/atom false)
                      border-color (reagent/atom "black")
                      z-index (reagent/atom '())
-                     start-pos (reagent/atom {:x 100 :y 150})
-                     current-pos (reagent/atom {:x 100 :y 150})]
+                     start-pos (reagent/atom {:x (:x @node-initial-pos) :y (:y @node-initial-pos)})
+                     current-pos (reagent/atom {:x (:x @node-initial-pos) :y (:y @node-initial-pos)})]
                     [:g {:id             uuid
                          :transform      (str "translate(" (:x @current-pos) "," (:y @current-pos) ")")
-                         :on-mouse-over  (fn [_]
-                                           (reset! mouse-over? true))
-                         :on-mouse-leave (fn [_]
-                                            (reset! mouse-over? false))}
+                         :on-mouse-over  #(reset! mouse-over? true)
+                         :on-mouse-leave #(reset! mouse-over? false)}
                      [:rect {:id             uuid
                              :on-mouse-over  (fn [_]
                                                (reset! border-color "red"))
@@ -192,8 +197,9 @@
   [:div {:id "request_graph"}
    [:h2 "Graph"]
    (-> [:svg {:id     "request-graph-svg"
-              :width  640
-              :height 400}
+              :style  {:background-color "#e6e9ef"}
+              :width  "100%"
+              :height 480}
         [arrow-head]
         [request-icon]]
        (into (repeat @request-count [request-node]))
