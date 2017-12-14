@@ -14,10 +14,10 @@
   [:div {:class "modal-content"}
    [:h4 {:class "modal-header"} "Request JSON"]
    [:textarea
-    {:class "form-control"
-     :value     (.stringify js/JSON (clj->js (map #(dissoc % :uuid) (vals @request-json))))
+    {:class     "form-control"
+     :value     (.stringify js/JSON (clj->js (map #(dissoc % :uuid) (vals @request-json))) nil 2)
      :read-only true
-     :rows 5}]])
+     :rows      25}]])
 
 (defonce request-count (reagent/atom 0))
 
