@@ -50,16 +50,18 @@
     {:x (.-x coordinate)
      :y (.-y coordinate)}))
 
+(defn draw-line [start-pos end-pos]
+  [:polyline {:points       (str (:x start-pos) "," (:y start-pos) " " (:x end-pos) "," (:y end-pos))
+              :fill         "none"
+              :stroke-width "2"
+              :stroke       "black"
+              :marker-end   "url(#Triangle)"}
+   ])
+
 (defn line [start end]
-  (let [svg (.getElementById js/document "request-graph-svg")
-        start-pos (@connector-positions start)
+  (let [start-pos (@connector-positions start)
         end-pos (@connector-positions end)]
-    [:polyline {:points       (str (:x start-pos) "," (:y start-pos) " " (:x end-pos) "," (:y end-pos))
-                :fill         "none"
-                :stroke-width "2"
-                :stroke       "black"
-                :marker-end   "url(#Triangle)"}
-     ]))
+    [draw-line start-pos end-pos]))
 
 (defn request-field [field]
   [:div {:class "col-sm-9"}
@@ -178,9 +180,9 @@
                     ))
 
 (defn draw-lines []
-  (when (not (empty? @lines))
-    (for [l (vals @lines)]
-      [line (:start-pos l) (:end-pos l)])))
+  (when (not (empty? @lines)))
+  (for [l (vals @lines)]
+    [line (:start-pos l) (:end-pos l)]))
 
 (defn arrow-head []
   [:defs
