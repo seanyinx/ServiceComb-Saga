@@ -8,6 +8,7 @@
 (defonce node-initial-pos (reagent/atom {:x 100, :y 150}))
 (defonce request-json (reagent/atom {}))
 (defonce current-request (reagent/atom (reagent/atom nil)))
+(defonce dragging? (reagent/atom false))
 (defonce dragging-request (reagent/atom nil))
 (defonce lines (reagent/atom {}))
 (defonce connector-positions (reagent/atom {}))
@@ -101,6 +102,7 @@
                               :on-mouse-over  #(reset! border-color "green")
                               :on-mouse-leave #(reset! border-color "black")
                               :on-mouse-down  (fn [evt]
+                                                (reset! dragging? true)
                                                 (reset! dragging-request {:connector-id id
                                                                           :request      @request})
                                                 (swap! connector-positions assoc id (position (elem-by-id id))))
@@ -195,6 +197,34 @@
              :orient       "auto"}
     [:path {:d "M 0 0 L 10 5 L 0 10 z"}]]])
 
+(defn absolute-pos [elem]
+  (let [rect (.getBoundingClientRect elem)]
+    {:x (.-left rect)
+     :y (.-top rect)})
+  )
+
+(defn draw-dragging-line []
+  (reagent/with-let [
+                     arrow-end (reagent/atom nil)
+                     update-arrow-end (fn [e]
+                                        (when @dragging?
+                                          (let [svg-pos (absolute-pos (.getElementById js/document "request-graph-svg"))]
+                                            (swap! arrow-end assoc
+                                                   :x (- (.-pageX e) (:x svg-pos))
+                                                   :y (- (.-pageY e) (:y svg-pos))))))
+                     clean-arrow-end (fn [_]
+                                       (reset! dragging? false)
+                                       (reset! arrow-end nil))
+                     _ (.addEventListener js/document "mousemove" update-arrow-end)
+                     _ (.addEventListener js/document "mouseup" clean-arrow-end)]
+                    (when (and (not (nil? @arrow-end)) @dragging?)
+                      (let [pos (position (elem-by-id (:connector-id @dragging-request)))]
+                        (draw-line pos @arrow-end)))
+                    (finally
+                      (.removeEventListener js/document "mousemove" update-arrow-end)
+                      (.removeEventListener js/document "mouseup" clean-arrow-end)))
+  )
+
 (defn graph-ui []
   [:div {:id "request_graph"}
    [:h2 "Graph"]
@@ -203,7 +233,8 @@
               :width  "100%"
               :height 480}
         [arrow-head]
-        [request-icon]]
+        [request-icon]
+        [draw-dragging-line]]
        (into (repeat @request-count [request-node]))
        (into (draw-lines)))
    [request-detail]]
